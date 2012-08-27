@@ -1,0 +1,9 @@
+{
+	"server": {"host": "irc.nnm.ru",
+				"port": 5557
+			},
+	"user": {"nickname": "pyBotter", 
+			 "realname": "pybotter"  
+			},
+	"channels": ["#testbot", "#nnm:nnm"]	
+}

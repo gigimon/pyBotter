@@ -1,5 +1,5 @@
+import uuid
 import logging
-import ConfigParser
 
 import gevent
 from gevent import socket
@@ -10,13 +10,21 @@ LOG = logging.getLogger('Botter')
 
 
 class Botter(object):
-    def __init__(self):
+    def __init__(self, init_channels=None):
         self._conn = None
+        if init_channels is None:
+            self._init_channels = []
+        else:
+            self._init_channels = init_channels
 
-    def connect(self, server, port, username):
+    def connect(self, server, port, username, realname=None):
         LOG.info('Connect to %s:%s' % (server, port))
         self._conn = socket.create_connection((server, port))
-        self._conn.send('PASS testpass\r\nNICK testbot\r\nUSER testbot test test :realname\r\n')
+        if realname == None:
+            realname = username
+        self._conn.send("""PASS {uniquepass}\r\n
+        NICK {username}\r\n
+        USER {username} testbot testbot :{realname}\r\n""".format(uniquepass=uuid.uuid1().hex, username=username, realname=realname))
 
     def pong(self, msg):
         answer = msg.strip().split(':')[1]
@@ -26,10 +34,11 @@ class Botter(object):
     def _parse_message(self, buf):
         LOG.info('Start message parsing')
         for msg in buf.split('\r\n'):
-            if not msg.strip():
+            msg = msg.strip()
+            if not msg:
                 continue
             LOG.info('Parse: %s' % msg)
-            if msg.strip().startswith('PING'):
+            if msg.startswith('PING'):
                 self.pong(msg)
                 continue
             msg_opts = msg.split()
@@ -37,12 +46,24 @@ class Botter(object):
             receiver = msg_opts[2]
             msg_type = msg_opts[1]
             message = ' '.join(msg_opts[3:])[1:]
+            if msg_type == 'NOTICE' and receiver == 'AUTH' and message.startswith('*** You connected'):
+                for chan in self._init_channels:
+                    self.join_channel(chan)
             if sender == 'gigimon':
-                self._conn.send('%s\r\n' % ' '.join(message.split()[1:]))
+                self._conn.send('%s\r\n' % message)
 
     def send_message(self, receiver, message):
         LOG.info('Send "%s" to "%s"' % (message, receiver))
         self._conn.send('PRIVMSG %s :%s\r\n' % (receiver, message))
+
+    def join_channel(self, channel):
+        LOG.info('Join to channel %s' % channel)
+        if not channel.startswith('#'):
+            channel = '#' + channel
+        if len(channel.split(':')) > 1:
+            channel, password = channel.split(':')
+            self._conn.send('JOIN %s %s\r\n' % (channel, password))
+        self._conn.send('JOIN %s\r\n' % channel)
 
     def work(self):
         buf = ''
@@ -56,6 +77,10 @@ class Botter(object):
 
 
 if __name__ == '__main__':
-    bot = Botter()
-    bot.connect('irc.nnm.ru', 5557, 'superbot')
+    bot = Botter(conf.config['channels'])
+    bot.connect(conf.config['server']['host'],
+                conf.config['server']['port'],
+                conf.config['user']['nickname'],
+                conf.config['user']['realname']
+    )
     bot.work()
