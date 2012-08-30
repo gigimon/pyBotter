@@ -6,7 +6,7 @@ import logging
 
 import gevent
 from gevent import socket
-from gevent.queue import Queue
+from gevent import monkey; monkey.patch_all()
 
 import conf
 from bus import Bus
@@ -76,8 +76,13 @@ class Botter(object):
         return messages
 
     def send_message(self, message):
-        LOG.info('Send "%s" to "%s"' % (message['message'], message['receiver']))
-        self._write_conn.send('PRIVMSG %s :%s\r\n' % (message['receiver'], message['message']))
+        if isinstance(message, list):
+            for m in message:
+                LOG.info('Send "%s" to "%s"' % (m['message'], m['receiver']))
+                self._write_conn.send('PRIVMSG %s :%s\r\n' % (m['receiver'], m['message']))
+        else:
+            LOG.info('Send "%s" to "%s"' % (message['message'], message['receiver']))
+            self._write_conn.send('PRIVMSG %s :%s\r\n' % (message['receiver'], message['message']))
 
     def join_channel(self, channel):
         LOG.info('Join to channel %s' % channel)

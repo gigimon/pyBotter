@@ -1,10 +1,11 @@
 import os
 import sys
+import inspect
 import logging
 
 import gevent
 
-from base import BaseFirstWordHandler, BaseMessageHandler
+from base import BaseHandler, BaseFirstWordHandler, BaseMessageHandler
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
@@ -22,14 +23,12 @@ class Loader(object):
                 module = __import__(name, globals(), locals())
                 for cls in dir(module):
                     c = getattr(module, cls)
-                    try:
-                        if (issubclass(c, BaseFirstWordHandler) or issubclass(c, BaseMessageHandler)) and not c in [BaseFirstWordHandler, BaseMessageHandler]:
+                    if inspect.isclass(c):
+                        if issubclass(c, BaseHandler) and not c in [BaseFirstWordHandler, BaseMessageHandler]:
                             self.add_plugin(c(self))
-                    except TypeError:
-                        continue
 
     def add_plugin(self, plugin_instance):
-        LOG.info('Add new plugin: %s' % plugin_instance)
+        LOG.debug('Add new plugin: %s' % plugin_instance)
         for plugin in self._plugins:
             if type(plugin_instance) == type(plugin):
                 break

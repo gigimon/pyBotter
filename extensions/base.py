@@ -1,28 +1,35 @@
 import gevent
 from gevent.greenlet import Greenlet
 
-class BaseFirstWordHandler(object):
+
+class BaseHandler(object):
+    """Main class for all handler"""
+    def __init__(self, loader):
+        self._loader = loader
+
+    def run(self, message):
+        if self.filter(message):
+            g = gevent.spawn(self.worker, message)
+            g.link_value(self.send_result)
+
+    def worker(self, message):
+        return
+
+    def filter(self, message):
+        return True
+
+    def send_result(self, greenlet):
+        if greenlet.value:
+            self._loader.return_to_server(greenlet.value)
+
+class BaseFirstWordHandler(BaseHandler):
     keywords = []
 
-    def __init__(self, loader):
-        self._loader = loader
-
-    def run(self, message):
+    def filter(self, message):
         for kw in self.keywords:
             if message['message'].startswith(kw):
-                gevent.spawn(self._run, message)
+                return True
+        return False
 
-    def _run(self, message):
-        pass
-
-
-class BaseMessageHandler(object):
-
-    def __init__(self, loader):
-        self._loader = loader
-
-    def run(self, message):
-        Greenlet.spawn(self._run, message)
-
-    def _run(self, message):
-        pass
+class BaseMessageHandler(BaseHandler):
+    pass
