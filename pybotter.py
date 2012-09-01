@@ -1,6 +1,3 @@
-import os
-import sys
-
 import uuid
 import logging
 
@@ -13,6 +10,7 @@ from bus import Bus
 from extensions import Loader
 
 LOG = logging.getLogger('Botter')
+
 
 class Botter(object):
     def __init__(self, init_channels=None):
@@ -43,7 +41,6 @@ class Botter(object):
     def pong(self, msg):
         answer = msg.strip().split(':')[1]
         self._write_conn.send('PONG %s\r\n' % answer)
-        LOG.debug('Send PONG to server: %s' % answer)
 
     def _parse_message(self, buf):
         LOG.info('Start message parsing')
@@ -105,7 +102,6 @@ class Botter(object):
         buf = ''
         while True:
             msg = self._read_conn.recv(512)
-            LOG.debug('Get from server: %s' % msg)
             buf += msg
             if len(msg) < 512 and msg.endswith('\r\n'):
                 messages = self._parse_message(buf)
@@ -119,11 +115,15 @@ class Botter(object):
                 self.send_message(self.bus.get_out_message())
             gevent.sleep()
 
-if __name__ == '__main__':
+
+def main():
     bot = Botter(conf.config['channels'])
     bot.connect(conf.config['server']['host'],
-                conf.config['server']['port'],
-                conf.config['user']['nickname'],
-                conf.config['user']['realname']
+        conf.config['server']['port'],
+        conf.config['user']['nickname'],
+        conf.config['user']['realname']
     )
     bot.work()
+
+if __name__ == '__main__':
+    main()

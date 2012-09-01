@@ -1,10 +1,13 @@
 import re
 import urllib2
+import logging
 from lxml import etree
 from lxml.etree import tostring
 from itertools import chain
 
 from base import BaseMessageHandler
+
+LOG = logging.getLogger('twitter')
 
 class Twitter(BaseMessageHandler):
 
@@ -22,11 +25,11 @@ class Twitter(BaseMessageHandler):
             parts = ([node.text] +
                      list(chain(*([c.text, tostring(c), c.tail] for c in node.getchildren()))) +
                      [node.tail])
-            # filter removes possible Nones in texts and tails
             return ''.join(filter(None, parts))
         urls = self.parse_re.findall(message['message'])
         messages = []
         for url in urls:
+            LOG.info('Get text from:\'%s\'' % url)
             p = urllib2.urlopen(url).read()
             tree = etree.HTML(p)
             tweet = tree.xpath("//p[contains(@class, 'tweet-text')]")[0]
