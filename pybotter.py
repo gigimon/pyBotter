@@ -107,13 +107,14 @@ class Botter(object):
                 messages = self._parse_message(buf)
                 buf = ''
                 self.bus.send_in_message(messages)
+            gevent.sleep(0.1)
 
     def _start_send(self):
         while True:
             while self.bus.exist_out_messages():
                 LOG.debug("Send to server message")
                 self.send_message(self.bus.get_out_message())
-            gevent.sleep()
+            gevent.sleep(0.1)
 
 
 def main():

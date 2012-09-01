@@ -46,5 +46,5 @@ class Loader(object):
                     for plugin in self._plugins:
                         plugin.run(message)
                 else:
-                    gevent.sleep()
+                    gevent.sleep(0.1)
         self._worker = gevent.spawn(check_messages)
