@@ -7,14 +7,14 @@ from itertools import chain
 
 from base import BaseMessageHandler
 
-LOG = logging.getLogger('plugins:twitter')
+LOG = logging.getLogger('plugins:open_vk')
 
-class Twitter(BaseMessageHandler):
+class Open_VK(BaseMessageHandler):
 
-    parse_re = re.compile(r'((?:http|https)://twitter.com/.+/status/\d+)')
+    parse_re = re.compile(r'(http://vk.com/wall[_\d]+)')
 
     def filter(self, message):
-        if 'twitter.com' in message['message']:
+        if 'vk.com' in message['message']:
             return True
         return False
 
@@ -30,13 +30,11 @@ class Twitter(BaseMessageHandler):
             LOG.info('Get text from:\'%s\'' % url)
             p = urllib2.urlopen(url).read()
             tree = etree.HTML(p)
-            tweet = tree.xpath("//p[contains(@class, 'tweet-text')]")[0]
-            tweet_name = '@'+tree.xpath("//span[contains(@class, 'username js-action-profile-name')]/b")[0].text
-            realname = tree.xpath("//strong[contains(@class, 'fullname js-action-profile-name')]")[0].text
-            etree.strip_tags(tweet, 's','a','span','b')
-            tweet_parts = stringify_children(tweet)
-            tweet_text = "\00304%s\00301 (%s): %s" % (tweet_name, realname, tweet_parts.strip())
+            content = tree.xpath("//div[contains(@class, 'wall_post_text')]")[0]
+            user_name = tree.xpath("//a[contains(@class, 'fw_post_author')]")[0].text
+            etree.strip_tags(content, 's','a','span','b', 'br')
+            message_parts = stringify_children(content)
+            all_text = "\00304%s\00301: %s" % (user_name, message_parts.strip())
             messages.append({'receiver': message['receiver'],
-                            'message': tweet_text.encode('latin1')})
+                         'message': all_text.encode('utf8')})
         return messages
-
