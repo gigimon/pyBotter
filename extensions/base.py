@@ -1,6 +1,13 @@
+import re
+import lxml
 import gevent
-from gevent.greenlet import Greenlet
+import urllib2
+import logging
+from itertools import chain
+from lxml import etree
+from lxml.etree import tostring
 
+LOG = logging.getLogger('BaseHandler')
 
 class BaseHandler(object):
     """Main class for all handler"""
@@ -13,10 +20,12 @@ class BaseHandler(object):
             g.link_value(self.send_result)
 
     def worker(self, message):
-        return
+        """Greenlet worker"""
+        raise NotImplementedError
 
     def filter(self, message):
-        return True
+        """This method run before worker for check message for this handler, must return Boolean"""
+        raise NotImplementedError
 
     def send_result(self, greenlet):
         if greenlet.value:
@@ -33,3 +42,24 @@ class BaseFirstWordHandler(BaseHandler):
 
 class BaseMessageHandler(BaseHandler):
     pass
+
+class BaseUrlParserHandler(BaseHandler):
+    parse_re = re.compile(r'')
+    filter_url = ''
+
+    def filter(self, message):
+        if self.filter_url in message['message']:
+            return True
+        return False
+
+    def stringify_children(self, node):
+        parts = ([node.text] +
+                 list(chain(*([c.text, tostring(c), c.tail] for c in node.getchildren()))) +
+                 [node.tail])
+        return ''.join(filter(None, parts))
+
+    def create_html_tree(self, url):
+        LOG.info('Get text from:\'%s\'' % url)
+        p = urllib2.urlopen(url).read()
+        tree = etree.HTML(p)
+        return tree

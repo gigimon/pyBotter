@@ -5,7 +5,7 @@ import logging
 
 import gevent
 
-from base import BaseHandler, BaseFirstWordHandler, BaseMessageHandler
+from base import BaseHandler, BaseFirstWordHandler, BaseMessageHandler, BaseUrlParserHandler
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
@@ -24,7 +24,9 @@ class Loader(object):
                 for cls in dir(module):
                     c = getattr(module, cls)
                     if inspect.isclass(c):
-                        if issubclass(c, BaseHandler) and not c in [BaseFirstWordHandler, BaseMessageHandler]:
+                        if issubclass(c, BaseHandler) and not c in [BaseFirstWordHandler,
+                                                                    BaseMessageHandler,
+                                                                    BaseUrlParserHandler]:
                             self.add_plugin(c(self))
 
     def add_plugin(self, plugin_instance):
