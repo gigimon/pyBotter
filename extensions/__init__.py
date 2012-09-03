@@ -5,20 +5,22 @@ import logging
 
 import gevent
 
-from base import BaseHandler, BaseFirstWordHandler, BaseMessageHandler, BaseUrlParserHandler
+from base import BaseHandler, BaseFirstWordHandler, BaseMessageHandler, BaseUrlParserHandler, BaseAlwaysRunningHandler
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 LOG = logging.getLogger('Loader')
 
 class Loader(object):
     def __init__(self, bus):
         self._plugins = []
+        self._cycled_plugins = []
         self.bus = bus
 
     def load_plugins(self):
         for m in os.listdir('extensions/'):
-            if not m.endswith('.pyc') and not m.startswith('__') and not m in ['base.py']:
+            if not m.endswith('.pyc') and not m.startswith('__') and not m in ['base.py', 'base.pyc']:
                 name = m.split('.')[0]
                 module = __import__(name, globals(), locals())
                 for cls in dir(module):
@@ -26,15 +28,16 @@ class Loader(object):
                     if inspect.isclass(c):
                         if issubclass(c, BaseHandler) and not c in [BaseFirstWordHandler,
                                                                     BaseMessageHandler,
-                                                                    BaseUrlParserHandler]:
+                                                                    BaseUrlParserHandler,
+                                                                    BaseAlwaysRunningHandler]:
                             self.add_plugin(c(self))
 
     def add_plugin(self, plugin_instance):
-        LOG.debug('Add new plugin: %s' % plugin_instance)
-        for plugin in self._plugins:
-            if type(plugin_instance) == type(plugin):
-                break
+        if isinstance(plugin_instance, BaseAlwaysRunningHandler):
+            LOG.debug('Add cycled plugin: %s' % plugin_instance)
+            self._cycled_plugins.append(plugin_instance)
         else:
+            LOG.debug('Add new plugin: %s' % plugin_instance)
             self._plugins.append(plugin_instance)
 
     def return_to_server(self, message):
@@ -49,4 +52,6 @@ class Loader(object):
                         plugin.run(message)
                 else:
                     gevent.sleep(0.1)
+        for p in self._cycled_plugins:
+            p.run()
         self._worker = gevent.spawn(check_messages)

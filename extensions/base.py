@@ -14,6 +14,10 @@ class BaseHandler(object):
     def __init__(self, loader):
         self._loader = loader
 
+    @property
+    def name(self):
+        return self.__class__.__name__
+
     def run(self, message):
         if self.filter(message):
             g = gevent.spawn(self.worker, message)
@@ -63,3 +67,13 @@ class BaseUrlParserHandler(BaseHandler):
         p = urllib2.urlopen(url).read()
         tree = etree.HTML(p)
         return tree
+
+class BaseAlwaysRunningHandler(BaseHandler):
+    def run(self):
+        g = gevent.spawn(self.worker)
+
+    def worker(self):
+        pass
+
+    def send_message(self, message):
+        self._loader.return_to_server(message)

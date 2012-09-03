@@ -12,28 +12,36 @@ from extensions import Loader
 LOG = logging.getLogger('Botter')
 
 class Botter(object):
-    def __init__(self, init_channels=None):
+    def __init__(self, username, username_password=None, realname=None, init_channels=None):
         self._conn = None
         self._write_conn = None
         self._read_conn = None
 
+        self.username = username
+        self.username_password = username_password
+        if not realname:
+            self.realname = username
+        else:
+            self.realname = realname
         self.bus = Bus()
         self.plugins = Loader(self.bus)
         self.plugins.load_plugins()
+
+        self.joined = False
 
         if init_channels is None:
             self._init_channels = []
         else:
             self._init_channels = init_channels
 
-    def connect(self, server, port, username, realname=None):
+    def connect(self, server, port):
         LOG.info('Connect to %s:%s' % (server, port))
         self._conn = socket.create_connection((server, port))
-        if realname == None:
-            realname = username
         self._conn.send("""PASS {uniquepass}\r\n
         NICK {username}\r\n
-        USER {username} testbot testbot :{realname}\r\n""".format(uniquepass=uuid.uuid1().hex, username=username, realname=realname))
+        USER {username} testbot testbot :{realname}\r\n""".format(uniquepass=uuid.uuid1().hex,
+            username=self.username,
+            realname=self.realname))
         self._write_conn = self._conn.dup()
         self._read_conn = self._conn.dup()
 
@@ -64,12 +72,21 @@ class Botter(object):
             if msg_type == 'NOTICE' and receiver == 'AUTH' and message.startswith('*** You connected'):
                 for chan in self._init_channels:
                     self.join_channel(chan)
+            if msg_type == 'NOTICE' and sender == 'NickServ' and 'NickServ IDENTIFY' in message:
+                self.authorize()
+                continue
             messages.append({'sender': sender,
                              'receiver': receiver,
                              'msg_type': msg_type,
                              'message': message,
                              'user_ident': user_ident})
         return messages
+
+    def authorize(self):
+        LOG.info('Authorize in nickserv')
+        if self.username_password:
+            self.bus.send_out_message({'receiver':'NickServ',
+                                       'message': 'identify %s' % self.username_password})
 
     def send_message(self, message):
         if isinstance(message, list):
@@ -82,20 +99,23 @@ class Botter(object):
 
     def join_channel(self, channel):
         LOG.info('Join to channel %s' % channel)
+        self.joined = True
         if not channel.startswith('#'):
             channel = '#' + channel
         if len(channel.split(':')) > 1:
             channel, password = channel.split(':')
             self._write_conn.send('JOIN %s %s\r\n' % (channel, password))
-        self._write_conn.send('JOIN %s\r\n' % channel)
+        else:
+            self._write_conn.send('JOIN %s\r\n' % channel)
 
     def work(self):
         """Start Loader check bus to input messages"""
+        receive = gevent.spawn(self._start_recv)
+        sender = gevent.spawn(self._start_send)
+        while not self.joined:
+            gevent.sleep(1)
         self.plugins.work()
-        gevent.joinall([
-            gevent.spawn(self._start_recv),
-            gevent.spawn(self._start_send),
-            ])
+        gevent.joinall([ receive, sender ])
 
     def _start_recv(self):
         buf = ''
@@ -117,12 +137,14 @@ class Botter(object):
 
 
 def main():
-    bot = Botter(conf.config['channels'])
+    bot = Botter(conf.config['user']['nickname'],
+                username_password=conf.config['user']['password'],
+                realname=conf.config['user']['realname'],
+                init_channels=conf.config['channels'],
+            )
     bot.connect(conf.config['server']['host'],
         conf.config['server']['port'],
-        conf.config['user']['nickname'],
-        conf.config['user']['realname']
-    )
+            )
     bot.work()
 
 if __name__ == '__main__':
