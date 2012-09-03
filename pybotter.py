@@ -1,16 +1,15 @@
 import uuid
 import logging
 
+from gevent import monkey; monkey.patch_all()
 import gevent
 from gevent import socket
-from gevent import monkey; monkey.patch_all()
 
 import conf
 from bus import Bus
 from extensions import Loader
 
 LOG = logging.getLogger('Botter')
-
 
 class Botter(object):
     def __init__(self, init_channels=None):
@@ -127,4 +126,5 @@ def main():
     bot.work()
 
 if __name__ == '__main__':
+    from gevent import monkey; monkey.patch_all()
     main()

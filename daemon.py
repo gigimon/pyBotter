@@ -1,12 +1,10 @@
-import atexit
 import os
 import sys
 import time
 import signal
+import atexit
 import logging
 
-import conf
-import pybotter
 
 class Daemon(object):
     """
@@ -25,11 +23,6 @@ class Daemon(object):
         self.daemon_alive = True
 
     def daemonize(self):
-        """
-          Do the UNIX double-fork magic, see Stevens' "Advanced
-          Programming in the UNIX Environment" for details (ISBN 0201563177)
-          http://www.erlenstar.demon.co.uk/unix/faq_2.html#SEC16
-          """
         try:
             pid = os.fork()
             if pid > 0:
@@ -70,11 +63,12 @@ class Daemon(object):
 
         def sigtermhandler(signum, frame):
             self.daemon_alive = False
+            sys.exit(0)
         signal.signal(signal.SIGTERM, sigtermhandler)
         signal.signal(signal.SIGINT, sigtermhandler)
 
         if self.verbose >= 1:
-            print "Started"
+            print "Started\n"
 
         # Write pidfile
         atexit.register(self.delpid) # Make sure pid file is removed if we quit
@@ -154,12 +148,9 @@ class Daemon(object):
                 sys.exit(1)
 
         if self.verbose >= 1:
-            print "Stopped"
+            print "Stopped\n"
 
     def restart(self):
-        """
-          Restart the daemon
-          """
         self.stop()
         self.start()
 
@@ -168,7 +159,15 @@ class Daemon(object):
             logging.root.removeHandler(handler)
         logging.basicConfig(filename = 'pybotter.log',
             level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",)
-        pybotter.main()
+        from pybotter import main
+        main()
 
-d = Daemon('pybotter.pid')
-d.start()
+pid = os.path.join(os.path.realpath(os.path.dirname(__file__)), 'pybotter.pid')
+d = Daemon(pid)
+
+if sys.argv[1] not in ['start', 'stop', 'restart']:
+    print "Please use only: start/stop/restart"
+    sys.exit(1)
+
+handler = getattr(d, sys.argv[1])
+handler()
