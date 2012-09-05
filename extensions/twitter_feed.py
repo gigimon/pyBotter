@@ -25,7 +25,7 @@ class TwitterFeed(BaseAlwaysRunningHandler):
                 try:
                     statuses = api.home_timeline()
                     if not last_id:
-                        last_id = statuses[-1].id
+                        last_id = statuses[0].id
                     for status in reversed(statuses):
                         if status.id > last_id:
                             last_id = status.id
