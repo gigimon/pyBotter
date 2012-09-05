@@ -163,7 +163,7 @@ class Daemon(object):
         main()
 
 pid = os.path.join(os.path.realpath(os.path.dirname(__file__)), 'pybotter.pid')
-d = Daemon(pid)
+d = Daemon(pid, stdout='stdout.log', stderr='stderr.log')
 
 if sys.argv[1] not in ['start', 'stop', 'restart']:
     print "Please use only: start/stop/restart"
