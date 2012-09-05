@@ -45,7 +45,9 @@ class BaseFirstWordHandler(BaseHandler):
         return False
 
 class BaseMessageHandler(BaseHandler):
-    pass
+
+    def filter(self, message):
+        return True
 
 class BaseUrlParserHandler(BaseHandler):
     parse_re = re.compile(r'')

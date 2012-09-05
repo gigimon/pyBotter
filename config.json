@@ -1,9 +1,24 @@
 {
-	"server": {"host": "irc.nnm.ru",
-				"port": 5557
+	"server": {"host": "",
+			    "port": 5557
 			},
-	"user": {"nickname": "pyBotter", 
-			 "realname": "pybotter"  
+	"user": {"nickname": "pyBotter1",
+			 "realname": "pybotter1",
+             "password": ""
 			},
-	"channels": ["#testbot", "#nnm:nnm"]	
+	"channels": ["#testbot"],
+    "plugins": {"TwitterFeed": {
+            "consumer_key": "",
+            "consumer_secret": "",
+            "access_token_key": "",
+            "access_token_secret" : ""
+            },
+        "UrlSaver": {
+            "host": "",
+            "username": "pybotter",
+            "password": "pybotter",
+            "database": "pybotter",
+            "table": "url_saver"
+        }
+    }
 }

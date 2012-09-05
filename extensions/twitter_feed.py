@@ -22,16 +22,19 @@ class TwitterFeed(BaseAlwaysRunningHandler):
             last_id = 0
             channels = [chan.split(':')[0] for chan in config['channels']]
             while True:
-                statuses = api.home_timeline()
-                for status in reversed(statuses):
-                    if status.id > last_id:
-                        last_id = status.id
-                        tweet_text = "\00304@%s\00301 (%s): %s" % (status.author.screen_name,
+                try:
+                    statuses = api.home_timeline()
+                    for status in reversed(statuses):
+                        if status.id > last_id:
+                            last_id = status.id
+                            tweet_text = "\00310@%s (%s)\00314: %s\003" % (status.author.screen_name,
                                                                    status.author.name,
                                                                    status.text.strip())
-                        for chan in channels:
-                            self.send_message({'receiver': str(chan),
-                                               'message': tweet_text.encode('utf8')})
-                gevent.sleep(15)
+                            for chan in channels:
+                                self.send_message({'receiver': str(chan),
+                                                   'message': tweet_text.encode('utf8')})
+                except BaseException, e:
+                    LOG.error('Exception!!! (%s)' % e)
+                gevent.sleep(60)
         else:
             LOG.error('Can\'t read feed, because credentials is bad')
