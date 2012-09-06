@@ -66,3 +66,6 @@ class UrlSaver(BaseMessageHandler):
                 return messages
             else:
                 return {'receiver': message['receiver'], 'message': 'Ничего не нашел :('}
+        elif first_word == '!curls':
+            res = self.db.query("SELECT COUNT(url) FROM url_saver;")
+            return {'receiver': message['receiver'], 'message': 'В базе %s ссылок' % res[0][0]}

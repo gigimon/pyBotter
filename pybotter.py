@@ -132,7 +132,10 @@ class Botter(object):
         while True:
             while self.bus.exist_out_messages():
                 LOG.debug("Send to server message")
-                self.send_message(self.bus.get_out_message())
+                try:
+                    self.send_message(self.bus.get_out_message())
+                except BaseException, e:
+                    LOG.error('Can\'t send message: %s' % e)
             gevent.sleep(0.1)
 
 
