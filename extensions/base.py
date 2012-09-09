@@ -18,6 +18,9 @@ class BaseHandler(object):
     def name(self):
         return self.__class__.__name__
 
+    def colorize(self, user, message):
+        return "\00310%s: \00314%s\003" % (user, message)
+
     def run(self, message):
         if self.filter(message):
             g = gevent.spawn(self.worker, message)

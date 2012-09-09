@@ -21,7 +21,7 @@ class Twitter(BaseUrlParserHandler):
             realname = tree.xpath("//strong[contains(@class, 'fullname js-action-profile-name')]")[0].text
             etree.strip_tags(tweet, 's','a','span','b')
             tweet_parts = self.stringify_children(tweet)
-            tweet_text = "\00310%s (%s): \00314%s\003" % (tweet_name, realname, tweet_parts.strip())
+            tweet_text = self.colorize("%s (%s)" % (tweet_name, realname), tweet_parts.strip())
             LOG.info('Twitter message (%s): %s' % (url, tweet_text))
             messages.append({'receiver': message['receiver'],
                             'message': tweet_text.encode('latin1')})

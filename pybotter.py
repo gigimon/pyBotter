@@ -36,6 +36,7 @@ class Botter(object):
 
     def connect(self, server, port):
         LOG.info('Connect to %s:%s' % (server, port))
+        self._con_opts = (server, port)
         self._conn = socket.create_connection((server, port))
         self._conn.send("""PASS {uniquepass}\r\n
         NICK {username}\r\n
@@ -60,6 +61,9 @@ class Botter(object):
             if msg.startswith('PING'):
                 self.pong(msg)
                 continue
+            if 'ERROR :Closing Link:' in msg:
+                self.connect(self._con_opts[0], self._con_opts[1])
+                return []
             msg_opts = msg.split()
             user_opts = msg_opts[0][1:].split('!')
             if len(user_opts) > 1:
@@ -125,7 +129,8 @@ class Botter(object):
             if len(msg) < 512 and msg.endswith('\r\n'):
                 messages = self._parse_message(buf)
                 buf = ''
-                self.bus.send_in_message(messages)
+                if messages:
+                    self.bus.send_in_message(messages)
             gevent.sleep(0.1)
 
     def _start_send(self):
@@ -134,8 +139,11 @@ class Botter(object):
                 LOG.debug("Send to server message")
                 try:
                     self.send_message(self.bus.get_out_message())
-                except BaseException, e:
+                except socket.error, e:
                     LOG.error('Can\'t send message: %s' % e)
+                    if 'Broken pipe' in e:
+                        LOG.info('Reconnect to server')
+                        self.connect(self._con_opts[0], self._con_opts[1])
             gevent.sleep(0.1)
 
 
@@ -151,5 +159,4 @@ def main():
     bot.work()
 
 if __name__ == '__main__':
-    from gevent import monkey; monkey.patch_all()
     main()

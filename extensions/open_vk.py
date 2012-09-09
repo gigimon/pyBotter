@@ -21,7 +21,7 @@ class Open_VK(BaseUrlParserHandler):
             user_name = tree.xpath("//a[contains(@class, 'fw_post_author')]")[0].text
             etree.strip_tags(content, 's','a','span','b', 'br')
             message_parts = self.stringify_children(content)
-            all_text = "\00304%s\00301: %s" % (user_name, message_parts.strip())
+            all_text = self.colorize(user_name, message_parts.strip())
             LOG.info('VK.com message (%s): %s' % (url, all_text))
             messages.append({'receiver': message['receiver'],
                          'message': all_text.encode('utf8')})

@@ -29,9 +29,7 @@ class TwitterFeed(BaseAlwaysRunningHandler):
                     for status in reversed(statuses):
                         if status.id > last_id:
                             last_id = status.id
-                            tweet_text = "\00310@%s (%s)\00314: %s\003" % (status.author.screen_name,
-                                                                   status.author.name,
-                                                                   status.text.strip())
+                            tweet_text = self.colorize("%s (%s)" % (status.author.screen_name, status.author.name), status.text.strip())
                             for chan in channels:
                                 self.send_message({'receiver': str(chan),
                                                    'message': tweet_text.encode('utf8')})
