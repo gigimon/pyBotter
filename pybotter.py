@@ -124,7 +124,13 @@ class Botter(object):
     def _start_recv(self):
         buf = ''
         while True:
-            msg = self._read_conn.recv(512)
+            try:
+                msg = self._read_conn.recv(512)
+            except socket.error, e:
+                LOG.error('Can\'t send message: %s' % e)
+                if 'Broken pipe' in e:
+                    LOG.info('Reconnect to server')
+                    self.connect(self._con_opts[0], self._con_opts[1])
             buf += msg
             if len(msg) < 512 and msg.endswith('\r\n'):
                 messages = self._parse_message(buf)

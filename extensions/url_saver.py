@@ -33,7 +33,10 @@ class UrlSaver(BaseMessageHandler):
         urls = self.url_re.findall(message['message'])
         for url in urls:
             LOG.debug('Insert url %s' % url)
-            self.db.query('INSERT INTO url_saver (url, sender, date) VALUES ("%s", "%s", NOW())' % (url, message['sender']))
+            try:
+                self.db.query('INSERT INTO url_saver (url, sender, date) VALUES ("%s", "%s", NOW())' % (url, message['sender']))
+            except BaseException, e:
+                LOG.error(e)
         words = message['message'].strip().split()
         if words:
             first_word = words[0]
