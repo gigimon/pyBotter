@@ -154,14 +154,17 @@ class Botter(object):
 
 
 def main():
+    LOG.debug('Initialize bot')
     bot = Botter(conf.config['user']['nickname'],
                 username_password=conf.config['user']['password'],
                 realname=conf.config['user']['realname'],
                 init_channels=conf.config['channels'],
             )
+    LOG.debug('First connect')
     bot.connect(conf.config['server']['host'],
         conf.config['server']['port'],
             )
+    LOG.debug('Start working')
     bot.work()
 
 if __name__ == '__main__':
